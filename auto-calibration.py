@@ -10,6 +10,7 @@ class state(Enum):
 	STARTED = 0
 	RECORD_NOISE = 1
 	RECORD_NOISE_DONE = 2
+	PLAY_NOISE = 3
 	MATCH_PLAYBACK = 5
 	MATCH_PLAYBACK_DONE = 6
 	MEASURE_BOTH_INIT = 7
@@ -36,11 +37,11 @@ min_sound = 0
 max_sound = 0
 
 noise_rms = 0
-noise_amp = 10000
+noise_amp = 20000
 noise_dly = 0
 
 spk_rms = 0
-spk_mult = 1
+spk_mult = 0.5
 spk_dly = 0
 
 avg.running_avg_init(25)
@@ -94,12 +95,22 @@ def callback(data, frame_count, time_info, status):
 		out = signal.encode_signal(WIDTH, CHUNK,[[1,0],[1,0]]) #Apparently setting all values to 0 turns the sound stream off...
 		
 		if (counter > 50):
+			STATE = state.PLAY_NOISE;
+			counter = 0;
+			signal.encode_init(CHANNELS, period)
+			out = signal.encode_signal(WIDTH, CHUNK, [[noise_amp, 0],[0,0]])
+	
+	#######################################
+	#           STATE PLAY NOISE          #
+	#######################################
+	elif (STATE == state.PLAY_NOISE):
+		out = signal.encode_signal(WIDTH, CHUNK, [[noise_amp, 0],[0,0]])
+
+		if (counter > 50):
 			STATE = state.RECORD_NOISE;
 			counter = 0;
 			avg.running_avg_init(25)
-			signal.encode_init(CHANNELS, period)
 			recording.recording_init()
-			out = signal.encode_signal(WIDTH, CHUNK, [[noise_amp, 0],[0,0]])
 			print(STATE)
 
 	#######################################
@@ -122,7 +133,7 @@ def callback(data, frame_count, time_info, status):
 	#######################################
 	elif(STATE == state.RECORD_NOISE_DONE):
 		de = recording.get_next()
-		de[1] = de[0]
+		de[1] = [int(i * spk_mult) for i in de[0]]
 		de[0] = [0 for k in range(0, CHUNK)]
 		out = signal.encode_data(de, WIDTH, CHANNELS, CHUNK)
 		if (counter > 10):
@@ -152,9 +163,9 @@ def callback(data, frame_count, time_info, status):
 
 			# NOT SURE IF GOOD
 			elif (spk_rms > noise_rms):
-				spk_mult = spk_mult - (spk_rms - noise_rms)/100
+				spk_mult = spk_mult - (spk_rms - noise_rms)/100000
 			elif (spk_rms < noise_rms):
-				spk_mult = spk_mult + (noise_rms - spk_rms)/100
+				spk_mult = spk_mult + (noise_rms - spk_rms)/100000
 
 	#######################################
 	#      STATE MATCH PLAYBACK DONE      #
@@ -202,7 +213,8 @@ def callback(data, frame_count, time_info, status):
 	elif (STATE == state.DELAY_SPEAKER):
 		NEXT_STATE = state.DELAY_SPEAKER
 
-		dly = int((prev_sound - min_sound)/(max_sound-min_sound)*RATE/signal.SIGNAL_SAMPLE_SIZE)+1
+		# dly = int((prev_sound - min_sound)/(max_sound-min_sound)*RATE/signal.SIGNAL_SAMPLE_SIZE)+1
+		dly = 1
 		print(min_sound,prev_sound,dly)
 		spk_dly += dly
 
@@ -221,7 +233,8 @@ def callback(data, frame_count, time_info, status):
 	elif (STATE == state.EXPEDITE_SPEAKER):
 		NEXT_STATE = state.EXPEDITE_SPEAKER
 
-		dly = int((prev_sound - min_sound)/(max_sound-min_sound)*RATE/signal.SIGNAL_SAMPLE_SIZE)+1
+		# dly = int((prev_sound - min_sound)/(max_sound-min_sound)*RATE/signal.SIGNAL_SAMPLE_SIZE)+1
+		dly = 1
 		print(min_sound,prev_sound,dly)
 		spk_dly -= dly
 
@@ -247,7 +260,7 @@ def callback(data, frame_count, time_info, status):
 		out = signal.encode_data(de, WIDTH, CHANNELS, CHUNK)
 
 		if counter > 10:
-			if (cur_sound <= min_sound or alternate_counter > 20): # LOL FIX!!
+			if (cur_sound <= min_sound or alternate_counter > 10): # LOL FIX!!
 				STATE = state.DONE
 				print("freq: %d, noise_amp: %d, noise_dly: %d, spk_mult: %d spk_dly: %d" %(freq, noise_amp, noise_dly, spk_mult, spk_dly))
 

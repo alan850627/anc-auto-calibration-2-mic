@@ -56,6 +56,7 @@ def queue_get_signal(CHUNK, ch, dly):
 		sample_pt -= CHUNK
 
 	out = []
+	
 	for i in range(sample_pt, CHUNK + sample_pt):
 		out.append(queue_mem[int(i/CHUNK)][ch][i%CHUNK])
 

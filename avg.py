@@ -1,8 +1,9 @@
 
 import numpy as np 
+import signal
 
 def rms(y):
-	y = np.array(y)
+	y = np.array(signal.high_pass([y], 1, 2048))[0]
 	return np.sqrt(np.mean(y**2))
 
 def close_enough(x, y, range):

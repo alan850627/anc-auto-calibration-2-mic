@@ -23,7 +23,7 @@ class state(Enum):
 WIDTH = 2
 CHANNELS = 2
 RATE = 44100
-CHUNK = 1024
+CHUNK = 2048
 STATE = state.STARTED
 NEXT_STATE = state.DELAY_SPEAKER
 
@@ -41,7 +41,7 @@ noise_amp = 20000
 noise_dly = 0
 
 spk_rms = 0
-spk_mult = 0.5
+spk_mult = 0.3
 spk_dly = 0
 
 avg.running_avg_init(25)
@@ -262,7 +262,8 @@ def callback(data, frame_count, time_info, status):
 		if counter > 10:
 			if (cur_sound <= min_sound or alternate_counter > 10): # LOL FIX!!
 				STATE = state.DONE
-				print("freq: %d, noise_amp: %d, noise_dly: %d, spk_mult: %d spk_dly: %d" %(freq, noise_amp, noise_dly, spk_mult, spk_dly))
+				# Actual delay: queue_size * CHUNK - sample_pt
+				print("freq: %d, noise_amp: %d, noise_dly: %d, spk_mult: %d spk_dly: %d" %(freq, noise_amp, noise_dly, spk_mult, recording.queue_size * CHUNK - recording.sample_pt ))
 
 			elif (cur_sound < prev_sound):
 				STATE = NEXT_STATE

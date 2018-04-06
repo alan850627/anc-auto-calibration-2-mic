@@ -41,7 +41,7 @@ noise_amp = 20000
 noise_dly = 0
 
 spk_rms = 0
-spk_mult = 0.3
+spk_mult = 0.5
 spk_dly = 0
 
 avg.running_avg_init(25)
@@ -192,20 +192,22 @@ def callback(data, frame_count, time_info, status):
 	#       STATE MEASURE BOTH INIT       #
 	#######################################
 	elif (STATE == state.MEASURE_BOTH_INIT):
+		dly = 100
+		print(min_sound,prev_sound,spk_dly)
+		spk_dly += dly
+
 		de = signal.decode(data, WIDTH, CHANNELS, CHUNK)
 		prev_sound = avg.running_avg(avg.rms(de[1]))
 		recording.queue_record(de)
-		re = recording.queue_get_signal(CHUNK, 0, 0)
+		re = recording.queue_get_signal(CHUNK, 0, dly)
 		de[1] = [i * spk_mult for i in re]
 		de[0] = signal.get_sine(noise_amp, CHUNK)
 		out = signal.encode_data(de, WIDTH, CHANNELS, CHUNK)
 
-		
-		if counter > 10:
-			avg.running_avg_init(5)
-			print("Begin tweaking phase!")
-			STATE = state.DELAY_SPEAKER
-			counter = 0
+		avg.running_avg_init(5)
+		print("Begin tweaking phase!")
+		STATE = state.DELAY_SPEAKER
+		counter = 0
 
 	#######################################
 	#         STATE DELAY SPEAKER         #
@@ -215,7 +217,7 @@ def callback(data, frame_count, time_info, status):
 
 		# dly = int((prev_sound - min_sound)/(max_sound-min_sound)*RATE/signal.SIGNAL_SAMPLE_SIZE)+1
 		dly = 1
-		print(min_sound,prev_sound,dly)
+		print(min_sound,prev_sound,spk_dly)
 		spk_dly += dly
 
 		de = signal.decode(data, WIDTH, CHANNELS, CHUNK)
@@ -235,7 +237,7 @@ def callback(data, frame_count, time_info, status):
 
 		# dly = int((prev_sound - min_sound)/(max_sound-min_sound)*RATE/signal.SIGNAL_SAMPLE_SIZE)+1
 		dly = 1
-		print(min_sound,prev_sound,dly)
+		print(min_sound,prev_sound,spk_dly)
 		spk_dly -= dly
 
 		de = signal.decode(data, WIDTH, CHANNELS, CHUNK)
@@ -263,7 +265,7 @@ def callback(data, frame_count, time_info, status):
 			if (cur_sound <= min_sound or alternate_counter > 10): # LOL FIX!!
 				STATE = state.DONE
 				# Actual delay: queue_size * CHUNK - sample_pt
-				print("freq: %d, noise_amp: %d, noise_dly: %d, spk_mult: %d spk_dly: %d" %(freq, noise_amp, noise_dly, spk_mult, recording.queue_size * CHUNK - recording.sample_pt ))
+				print("freq: %d, noise_amp: %d, noise_dly: %d, spk_mult: %f spk_dly: %d" %(freq, noise_amp, noise_dly, spk_mult, spk_dly ))
 
 			elif (cur_sound < prev_sound):
 				STATE = NEXT_STATE

@@ -1,5 +1,6 @@
 
 import signal
+import sys
 import copy
 
 mem = []
@@ -32,13 +33,16 @@ from collections import deque
 sample_pt = 0
 queue_size = 3
 queue_mem = deque()
+queue_dly = 0
 def queue_init(CHUNK):
 	global queue_mem
 	global sample_pt
 	global queue_size
+	global queue_dly
 	queue_size = 3
 	queue_mem = deque([[] for i in range(0,queue_size)])
 	sample_pt = CHUNK*(queue_size - 1)
+	queue_dly = 0
 
 def queue_record(data):
 	if (len(queue_mem) >= queue_size):
@@ -49,11 +53,13 @@ def queue_record(data):
 def queue_get_signal(CHUNK, ch, dly):
 	global sample_pt
 	global queue_size
+	global queue_dly
 	sample_pt -= int(dly)
+	queue_dly += int(dly)
 
 	if (sample_pt > CHUNK*(queue_size - 1)):
 		print("OOPS BECOMING NON-CAUSAL!!!!")
-		sample_pt -= CHUNK
+		sys.exit(1)
 
 	out = []
 	

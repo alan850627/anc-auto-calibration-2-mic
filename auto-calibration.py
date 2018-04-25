@@ -41,7 +41,7 @@ noise_amp = 20000
 noise_dly = 0
 
 spk_rms = 0
-spk_mult = 0.5
+spk_mult = 1
 spk_dly = 0
 
 avg.running_avg_init(25)
@@ -158,7 +158,7 @@ def callback(data, frame_count, time_info, status):
 			counter = 0
 			avg.running_avg_init(5)
 
-			if (avg.close_enough(spk_rms, noise_rms, 10)):
+			if (avg.close_enough(spk_rms, noise_rms, 100)):
 				STATE = state.MATCH_PLAYBACK_DONE
 
 			# NOT SURE IF GOOD

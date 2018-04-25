@@ -192,7 +192,7 @@ def callback(data, frame_count, time_info, status):
 	#       STATE MEASURE BOTH INIT       #
 	#######################################
 	elif (STATE == state.MEASURE_BOTH_INIT):
-		dly = 100
+		dly = 18
 		print(min_sound,prev_sound,spk_dly)
 		spk_dly += dly
 
